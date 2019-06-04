@@ -1,0 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const controller_1 = require("./controller");
+const ParkingLotApplication_1 = require("./models/ParkingLotApplication");
+const router = express_1.Router();
+exports.router = router;
+const parkingLotApplication = new ParkingLotApplication_1.ParkingLotApplication();
+const controller = new controller_1.Controller(parkingLotApplication);
+router.get("/", (req, res) => res.send("Welcome to the Parking Lot"));
+router.get("/status", controller.getStatus);
+router.post("/create_parking_lot", controller.postCreateParkingLot);
+router.post("/park", controller.postPark);
+router.post("/leave", controller.postLeave);
+router.post("/registration_numbers_for_cars_with_colour", controller.postRegistrationNumbersForCarsWithColour);
+router.post("/slot_numbers_for_cars_with_colour", controller.postSlotNumbersForCarsWithColour);
+router.post("/slot_number_for_registration_number", controller.postSlotNumberForRegistrationNumber);

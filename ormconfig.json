@@ -1,0 +1,13 @@
+{
+  "type": "postgres",
+  "host": "localhost",
+  "port": 5432,
+  "username": "parking_lot",
+  "password": "",
+  "database": "parking_lot",
+  "synchronize": true,
+  "logging": false,
+  "entities": ["src/models/*.ts"],
+  "migrations": ["src/migration/**/*.ts"],
+  "subscribers": ["src/subscriber/**/*.ts"]
+}
