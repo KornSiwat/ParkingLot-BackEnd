@@ -2,15 +2,24 @@ import { Ticket } from "./Ticket";
 import { VehicleInfo } from "./VehicleInfo";
 
 class TicketManager {
-  public tickets: Ticket[];
-
-  constructor() {
-    this.tickets = [];
+  public _tickets: Ticket[];
+  public get tickets() {
+    return this._tickets.sort((a, b) => a.slotNumber - b.slotNumber);
   }
 
-  public issueTicket(slotNumber: number, vehicleInfo: VehicleInfo): Ticket {
-    const ticket: Ticket = new Ticket(slotNumber, vehicleInfo);
-    this.tickets.push(ticket);
+  constructor() {
+    this._tickets = [];
+  }
+
+  public issueTicket(
+    parkingLotId: number,
+    slotNumber: number,
+    vehicleInfo: VehicleInfo
+  ): Ticket {
+    const ticket: Ticket = new Ticket(parkingLotId, slotNumber, vehicleInfo);
+
+    this._tickets.push(ticket);
+
     return ticket;
   }
 
@@ -47,7 +56,7 @@ class TicketManager {
   }
 
   public removeTicket(removingTicket: Ticket): void {
-    this.tickets = this.tickets.filter(
+    this._tickets = this.tickets.filter(
       ticket => ticket.slotNumber !== removingTicket.slotNumber
     );
   }

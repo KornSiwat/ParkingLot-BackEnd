@@ -1,14 +1,22 @@
-import { Entity, Column, PrimaryColumn } from "typeorm";
+import { Entity, Column, PrimaryColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { ParkingLot } from "./ParkingLot";
 
 @Entity('slots')
 class Slot {
-  @PrimaryColumn()
-  number: number;
+  @PrimaryGeneratedColumn()
+  readonly id: number;
+
+  @Column()
+  readonly number: number;
   
   @Column()
   isOccupied: boolean;
 
-  constructor(slotNumber: number) {
+  @ManyToOne(type => ParkingLot, parkingLot => parkingLot.slots)
+  readonly parkingLot: ParkingLot;
+
+  constructor(slotNumber: number, parkingLot: ParkingLot) {
+    this.parkingLot = parkingLot;
     this.number = slotNumber;
     this.isOccupied = false;
   }

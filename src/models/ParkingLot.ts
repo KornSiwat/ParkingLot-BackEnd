@@ -3,16 +3,25 @@ import { Slot } from "./Slot";
 import { TicketManager } from "./TicketManager";
 import { VehicleInfo } from "./VehicleInfo";
 import { Ticket } from "./Ticket";
+import { Entity, PrimaryColumn, OneToMany } from "typeorm";
 
+@Entity("parkingLots")
 class ParkingLot {
+  @PrimaryColumn()
+  readonly id: number;
   readonly ticketManager: TicketManager;
-  readonly slotAmount: number;
+  @OneToMany(type => Slot, slot => slot.parkingLot)
   public slots: Slot[];
 
-  constructor(slotAmount: number) {
-    this.slotAmount = slotAmount;
-    this.slots = this.createSlots(slotAmount);
+  constructor(id: number) {
+    this.id = id;
     this.ticketManager = new TicketManager();
+  }
+
+  public createSlots(slotAmount: number): Slot[] {
+    return Array.from(new Array(slotAmount)).map(
+      (_, index) => new Slot(index + 1, this)
+    );
   }
 
   public carIn(car: Car): void {
@@ -23,6 +32,7 @@ class ParkingLot {
       car.colour
     );
     const ticket: Ticket = this.ticketManager.issueTicket(
+      this.id,
       this.nearestAvailableSlot.number,
       vehicleInfo
     );
@@ -55,12 +65,6 @@ class ParkingLot {
   public getSlotNumberByRegistrationNumber(registrationNumber: string): number {
     return this.ticketManager.getSlotNumberByRegistrationNumber(
       registrationNumber
-    );
-  }
-
-  private createSlots(slotAmount: number): Slot[] {
-    return Array.from(new Array(slotAmount)).map(
-      (_, index) => new Slot(index + 1)
     );
   }
 

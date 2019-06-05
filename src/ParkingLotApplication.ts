@@ -5,51 +5,60 @@ import { getConnection } from "typeorm";
 import { Slot } from "./models/Slot";
 
 class ParkingLotApplication {
-  private _parkingLot?: ParkingLot;
-  private get parkingLot(): ParkingLot {
-    if (!this._parkingLot) throw new Error("Please create parking lot");
+  private parkingLots: ParkingLot[];
+  private getParkingLot(parkingLotId: number): ParkingLot {
+    try {
+      const parkingLotIndex: number = parkingLotId - 1;
 
-    return this._parkingLot;
+      return this.parkingLots[parkingLotIndex];
+    } catch {
+      throw new Error(`Parking Lot With Id ${parkingLotId} Not Found`);
+    }
   }
 
   constructor() {
-    this.setup();
+    this.setupParkingLot();
   }
 
-  public async setup(): Promise<void> {
-    const slots = await this.getSlots();
-    const slotAmount = slots.length;
-    const tickets = await this.getTickets();
-
-    if (slotAmount !== 0) {
-      this._parkingLot = new ParkingLot(slotAmount);
-      this.parkingLot.slots = slots;
-      this.parkingLot.ticketManager.tickets = tickets;
-    }
-    return;
+  public async setupParkingLot(): Promise<void> {
+    this.parkingLots = await this.getParkingLots();
+    this.parkingLots.forEach(async (parkingLot) => {
+      const parkingLotId = parkingLot.id;
+      parkingLot.slots = await this.getSlotsOfParkingLotWithId(parkingLotId);
+      parkingLot.ticketManager._tickets = await this.getTicketsOfParkingLotWithId(parkingLotId);
+    });
   }
 
   public async createParkingLot(slotAmount: number): Promise<string> {
-    this._parkingLot = new ParkingLot(slotAmount);
-    const slots = this.parkingLot.slots;
-    const connection = getConnection();
-    const repository = connection.getRepository(Slot);
+    const totalParkingLotAmount = this.parkingLots.length;
+    const newParkingLotId = totalParkingLotAmount + 1;
+    const newParkingLot = new ParkingLot(newParkingLotId);
+    const slots = newParkingLot.createSlots(slotAmount);
 
-    await repository.save(slots);
+    newParkingLot.slots = slots;
 
-    return `Created a parking lot with ${this.parkingLot.slotAmount} slots`;
+    this.parkingLots.push(newParkingLot);
+
+    this.syncParkingLotsDataToDatabase();
+
+    return `Created a parking lot id: ${newParkingLot.id} with ${
+      newParkingLot.slots.length
+    } slots`;
   }
 
   public async park(
+    parkingLotId: number,
     registrationNumber: string,
     colour: string
   ): Promise<string> {
     const car: Car = new Car(registrationNumber, colour);
 
     try {
-      this.parkingLot.carIn(car);
+      const parkingLot = this.getParkingLot(parkingLotId);
 
-      this.syncParkingLot();
+      parkingLot.carIn(car);
+
+      this.syncParkingLotsDataToDatabase();
 
       console.log(`Allocated Slot Number: ${car.ticket.slotNumber}`);
 
@@ -61,8 +70,8 @@ class ParkingLotApplication {
     }
   }
 
-  public status(): string {
-    const table: string[] = this.statusTable;
+  public status(parkingLotId: number): string {
+    const table: string[] = this.getStatusTable(parkingLotId);
 
     this.renderTable(table);
 
@@ -73,17 +82,21 @@ class ParkingLotApplication {
     table.map(row => console.log(row));
   }
 
-  private get statusTable(): string[] {
+  private getStatusTable(parkingLotId: number): string[] {
     const table: string[] = [];
 
     this.makeStatusTableHeader(table);
-    this.makeStatusTableBody(table);
+    this.makeStatusTableBody(parkingLotId, table);
 
     return table;
   }
 
-  public async leave(slotNumber: number): Promise<string> {
-    const ticket: Ticket | undefined = this.parkingLot.getTicketBySlotNumber(
+  public async leave(
+    parkingLotId: number,
+    slotNumber: number
+  ): Promise<string> {
+    const parkingLot = this.getParkingLot(parkingLotId);
+    const ticket: Ticket | undefined = parkingLot.getTicketBySlotNumber(
       slotNumber
     );
 
@@ -99,17 +112,21 @@ class ParkingLotApplication {
       ticket
     );
 
-    this.parkingLot.carOut(car);
+    parkingLot.carOut(car);
 
-    this.syncParkingLot();
+    this.syncParkingLotsDataToDatabase();
 
     console.log(`Slot number ${slotNumber} is free`);
 
     return `Slot number ${slotNumber} is free`;
   }
 
-  public registrationNumbersForCarsWithColour(colour: string): string {
-    const registrationNumbers: string[] = this.parkingLot.getRegistrationNumbersByColour(
+  public async registrationNumbersForCarsWithColour(
+    parkingLotId: number,
+    colour: string
+  ): Promise<string> {
+    const parkingLot = this.getParkingLot(parkingLotId);
+    const registrationNumbers: string[] = parkingLot.getRegistrationNumbersByColour(
       colour
     );
 
@@ -123,8 +140,12 @@ class ParkingLotApplication {
     return registrationNumbers.join(", ");
   }
 
-  public slotNumbersForCarsWithColour(colour: string): string {
-    const slotNumbers = this.parkingLot.getSlotNumbersByColour(colour);
+  public async slotNumbersForCarsWithColour(
+    parkingLotId: number,
+    colour: string
+  ): Promise<string> {
+    const parkingLot = this.getParkingLot(parkingLotId);
+    const slotNumbers = parkingLot.getSlotNumbersByColour(colour);
 
     if (slotNumbers.length === 0) {
       console.log("Not Found");
@@ -136,9 +157,13 @@ class ParkingLotApplication {
     return slotNumbers.join(", ");
   }
 
-  public slotNumberForRegistrationNumber(registrationNumber: string): string {
+  public async slotNumberForRegistrationNumber(
+    parkingLotId: number,
+    registrationNumber: string
+  ): Promise<string> {
     try {
-      const slotNumber = this.parkingLot.getSlotNumberByRegistrationNumber(
+      const parkingLot = this.getParkingLot(parkingLotId);
+      const slotNumber = parkingLot.getSlotNumberByRegistrationNumber(
         registrationNumber
       );
 
@@ -158,8 +183,12 @@ class ParkingLotApplication {
     table.push(header);
   }
 
-  private makeStatusTableBody(table: string[]): void {
-    this.parkingLot.ticketManager.tickets.forEach(ticket => {
+  private async makeStatusTableBody(
+    parkingLotId: number,
+    table: string[]
+  ): Promise<void> {
+    const parkingLot = this.getParkingLot(parkingLotId);
+    parkingLot.ticketManager.tickets.forEach(ticket => {
       const row = `${ticket.slotNumber}         ${
         ticket.vehicleInfo.registrationNumber
       }      ${ticket.vehicleInfo.colour}`;
@@ -168,37 +197,58 @@ class ParkingLotApplication {
     });
   }
 
-  private async getSlots(): Promise<Slot[]> {
+  private async getParkingLots(): Promise<ParkingLot[]> {
+    const connection = getConnection();
+    const parkingLotRepository = connection.getRepository(ParkingLot);
+
+    return await parkingLotRepository.find();
+  }
+
+  private async getSlotsOfParkingLotWithId(parkingLotId: number): Promise<Slot[]> {
     const connection = getConnection();
     const slotRepository = connection.getRepository(Slot);
 
-    return await slotRepository.find({ order: { number: "ASC" } });
+    return await slotRepository.find({
+      where: { parkingLotId: parkingLotId },
+      order: { number: "ASC" }
+    });
   }
 
-  private async getTickets(): Promise<Ticket[]> {
+  private async getTicketsOfParkingLotWithId(parkingLotId: number): Promise<Ticket[]> {
     const connection = getConnection();
     const ticketRepository = connection.getRepository(Ticket);
 
-    return await ticketRepository.find();
+    return await ticketRepository.find({
+      where: { parkingLotId: parkingLotId }
+    });
   }
 
-  private async syncParkingLot(): Promise<void> {
+  private async syncParkingLotsDataToDatabase(): Promise<void> {
+    await this.syncParkingLots();
     await this.syncSlots();
     await this.syncTickets();
+  }
+
+  private async syncParkingLots(): Promise<void> {
+    const connection = getConnection();
+    const parkingLotRepository = connection.getRepository(ParkingLot);
+    const parkingLots = this.parkingLots;
+
+    await parkingLotRepository.save(parkingLots);
   }
 
   private async syncSlots(): Promise<void> {
     const connection = getConnection();
     const slotRepository = connection.getRepository(Slot);
-    const slots = this.parkingLot.slots;
+    const slots = this.parkingLots.map((parkingLot) => parkingLot.slots).reduce((acc , slot) => acc.concat(slot), []);
 
     await slotRepository.save(slots);
   }
 
   private async syncTickets(): Promise<void> {
     const connection = getConnection();
-    const ticketRepository = connection.getRepository(Slot);
-    const tickets = this.parkingLot.slots;
+    const ticketRepository = connection.getRepository(Ticket);
+    const tickets = this.parkingLots.map((parkingLot) => parkingLot.ticketManager.tickets).reduce( (acc, ticket) => acc.concat(ticket), []);
 
     await ticketRepository.save(tickets);
   }

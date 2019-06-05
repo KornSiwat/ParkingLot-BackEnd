@@ -9,26 +9,26 @@ function createRouter() {
 
   router.get("/", (req, res) => res.send("Welcome to the Parking Lot"));
 
-  router.get("/status", controller.getStatus);
+  router.get("/:parkingLotId/status", controller.getStatus);
 
   router.post("/create_parking_lot", controller.postCreateParkingLot);
 
-  router.post("/park", controller.postPark);
+  router.post("/:parkingLotId/park", controller.postPark);
 
-  router.post("/leave", controller.postLeave);
+  router.post("/:parkingLotId/leave", controller.postLeave);
 
   router.post(
-    "/registration_numbers_for_cars_with_colour",
+    "/:parkingLotId/registration_numbers_for_cars_with_colour",
     controller.postRegistrationNumbersForCarsWithColour
   );
 
   router.post(
-    "/slot_numbers_for_cars_with_colour",
+    "/:parkingLotId/slot_numbers_for_cars_with_colour",
     controller.postSlotNumbersForCarsWithColour
   );
 
   router.post(
-    "/slot_number_for_registration_number",
+    "/:parkingLotId/slot_number_for_registration_number",
     controller.postSlotNumberForRegistrationNumber
   );
 

@@ -10,18 +10,25 @@ class Controller {
     this.postCreateParkingLot = this.postCreateParkingLot.bind(this);
     this.postPark = this.postPark.bind(this);
     this.postLeave = this.postLeave.bind(this);
-    this.postRegistrationNumbersForCarsWithColour = this.postRegistrationNumbersForCarsWithColour.bind(this);
-    this.postSlotNumbersForCarsWithColour = this.postSlotNumbersForCarsWithColour.bind(this);
-    this.postSlotNumberForRegistrationNumber = this.postSlotNumberForRegistrationNumber.bind(this);
+    this.postRegistrationNumbersForCarsWithColour = this.postRegistrationNumbersForCarsWithColour.bind(
+      this
+    );
+    this.postSlotNumbersForCarsWithColour = this.postSlotNumbersForCarsWithColour.bind(
+      this
+    );
+    this.postSlotNumberForRegistrationNumber = this.postSlotNumberForRegistrationNumber.bind(
+      this
+    );
   }
 
   getStatus(req: Request, res: Response) {
-    res.send(this.parkingLotApplication.status());
+    const parkingLotId: number = req.params.parkingLotId;
+    res.send(this.parkingLotApplication.status(parkingLotId));
   }
 
   async postCreateParkingLot(req: Request, res: Response) {
     const { slotAmount } = req.body as { slotAmount: number };
-    const responseMessage =  await this.parkingLotApplication.createParkingLot(
+    const responseMessage = await this.parkingLotApplication.createParkingLot(
       slotAmount
     );
 
@@ -29,11 +36,13 @@ class Controller {
   }
 
   async postPark(req: Request, res: Response) {
+    const parkingLotId: number = req.params.parkingLotId;
     const { registrationNumber, colour } = req.body as {
       registrationNumber: string;
       colour: string;
     };
     const responseMessage = await this.parkingLotApplication.park(
+      parkingLotId,
       registrationNumber,
       colour
     );
@@ -42,15 +51,21 @@ class Controller {
   }
 
   async postLeave(req: Request, res: Response) {
+    const parkingLotId: number = req.params.parkingLotId;
     const { slotNumber } = req.body as { slotNumber: number };
-    const responseMessage = await this.parkingLotApplication.leave(slotNumber);
+    const responseMessage = await this.parkingLotApplication.leave(
+      parkingLotId,
+      slotNumber
+    );
 
     res.send(responseMessage);
   }
 
   postRegistrationNumbersForCarsWithColour(req: Request, res: Response) {
+    const parkingLotId: number = req.params.parkingLotId;
     const { colour } = req.body as { colour: string };
     const responseMessage = this.parkingLotApplication.registrationNumbersForCarsWithColour(
+      parkingLotId,
       colour
     );
 
@@ -58,8 +73,10 @@ class Controller {
   }
 
   postSlotNumbersForCarsWithColour(req: Request, res: Response) {
+    const parkingLotId: number = req.params.parkingLotId;
     const { colour } = req.body as { colour: string };
     const responseMessage = this.parkingLotApplication.slotNumbersForCarsWithColour(
+      parkingLotId,
       colour
     );
 
@@ -67,8 +84,10 @@ class Controller {
   }
 
   postSlotNumberForRegistrationNumber(req: Request, res: Response) {
+    const parkingLotId: number = req.params.parkingLotId;
     const { registrationNumber } = req.body as { registrationNumber: string };
     const responseMessage = this.parkingLotApplication.slotNumberForRegistrationNumber(
+      parkingLotId,
       registrationNumber
     );
 

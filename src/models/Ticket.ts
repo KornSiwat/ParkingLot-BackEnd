@@ -1,15 +1,26 @@
-import { VehicleInfo } from './VehicleInfo';
-import { PrimaryColumn, Entity, Column } from 'typeorm';
+import { VehicleInfo } from "./VehicleInfo";
+import { PrimaryColumn, Entity, Column, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity()
+@Entity("tickets")
 class Ticket {
-  @PrimaryColumn()
+  @PrimaryGeneratedColumn()
+  readonly id: number;
+
+  @Column()
   readonly slotNumber: number;
 
-  @Column('simple-json')
+  @Column("simple-json")
   readonly vehicleInfo: VehicleInfo;
 
-  constructor(slotNumber: number, vehicleInfo: VehicleInfo) {
+  @Column()
+  readonly parkingLotId: number;
+
+  constructor(
+    parkingLotId: number,
+    slotNumber: number,
+    vehicleInfo: VehicleInfo
+  ) {
+    this.parkingLotId = parkingLotId;
     this.slotNumber = slotNumber;
     this.vehicleInfo = vehicleInfo;
   }
