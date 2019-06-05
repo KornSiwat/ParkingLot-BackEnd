@@ -61,10 +61,10 @@ class Controller {
     res.send(responseMessage);
   }
 
-  postRegistrationNumbersForCarsWithColour(req: Request, res: Response) {
+  async postRegistrationNumbersForCarsWithColour(req: Request, res: Response) {
     const parkingLotId: number = req.params.parkingLotId;
     const { colour } = req.body as { colour: string };
-    const responseMessage = this.parkingLotApplication.registrationNumbersForCarsWithColour(
+    const responseMessage = await this.parkingLotApplication.registrationNumbersForCarsWithColour(
       parkingLotId,
       colour
     );
@@ -72,10 +72,10 @@ class Controller {
     res.send(responseMessage);
   }
 
-  postSlotNumbersForCarsWithColour(req: Request, res: Response) {
+  async postSlotNumbersForCarsWithColour(req: Request, res: Response) {
     const parkingLotId: number = req.params.parkingLotId;
     const { colour } = req.body as { colour: string };
-    const responseMessage = this.parkingLotApplication.slotNumbersForCarsWithColour(
+    const responseMessage = await this.parkingLotApplication.slotNumbersForCarsWithColour(
       parkingLotId,
       colour
     );
@@ -83,10 +83,10 @@ class Controller {
     res.send(responseMessage);
   }
 
-  postSlotNumberForRegistrationNumber(req: Request, res: Response) {
+  async postSlotNumberForRegistrationNumber(req: Request, res: Response) {
     const parkingLotId: number = req.params.parkingLotId;
     const { registrationNumber } = req.body as { registrationNumber: string };
-    const responseMessage = this.parkingLotApplication.slotNumberForRegistrationNumber(
+    const responseMessage = await this.parkingLotApplication.slotNumberForRegistrationNumber(
       parkingLotId,
       registrationNumber
     );

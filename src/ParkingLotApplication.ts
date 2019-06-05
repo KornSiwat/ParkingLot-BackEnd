@@ -22,10 +22,12 @@ class ParkingLotApplication {
 
   public async setupParkingLot(): Promise<void> {
     this.parkingLots = await this.getParkingLots();
-    this.parkingLots.forEach(async (parkingLot) => {
+    this.parkingLots.forEach(async parkingLot => {
       const parkingLotId = parkingLot.id;
       parkingLot.slots = await this.getSlotsOfParkingLotWithId(parkingLotId);
-      parkingLot.ticketManager._tickets = await this.getTicketsOfParkingLotWithId(parkingLotId);
+      parkingLot.ticketManager._tickets = await this.getTicketsOfParkingLotWithId(
+        parkingLotId
+      );
     });
   }
 
@@ -204,7 +206,9 @@ class ParkingLotApplication {
     return await parkingLotRepository.find();
   }
 
-  private async getSlotsOfParkingLotWithId(parkingLotId: number): Promise<Slot[]> {
+  private async getSlotsOfParkingLotWithId(
+    parkingLotId: number
+  ): Promise<Slot[]> {
     const connection = getConnection();
     const slotRepository = connection.getRepository(Slot);
 
@@ -214,7 +218,9 @@ class ParkingLotApplication {
     });
   }
 
-  private async getTicketsOfParkingLotWithId(parkingLotId: number): Promise<Ticket[]> {
+  private async getTicketsOfParkingLotWithId(
+    parkingLotId: number
+  ): Promise<Ticket[]> {
     const connection = getConnection();
     const ticketRepository = connection.getRepository(Ticket);
 
@@ -223,10 +229,10 @@ class ParkingLotApplication {
     });
   }
 
-  private async syncParkingLotsDataToDatabase(): Promise<void> {
-    await this.syncParkingLots();
-    await this.syncSlots();
-    await this.syncTickets();
+  private syncParkingLotsDataToDatabase(): void {
+    this.syncParkingLots();
+    this.syncSlots();
+    this.syncTickets();
   }
 
   private async syncParkingLots(): Promise<void> {
@@ -240,7 +246,9 @@ class ParkingLotApplication {
   private async syncSlots(): Promise<void> {
     const connection = getConnection();
     const slotRepository = connection.getRepository(Slot);
-    const slots = this.parkingLots.map((parkingLot) => parkingLot.slots).reduce((acc , slot) => acc.concat(slot), []);
+    const slots = this.parkingLots
+      .map(parkingLot => parkingLot.slots)
+      .reduce((acc, slot) => acc.concat(slot), []);
 
     await slotRepository.save(slots);
   }
@@ -248,7 +256,9 @@ class ParkingLotApplication {
   private async syncTickets(): Promise<void> {
     const connection = getConnection();
     const ticketRepository = connection.getRepository(Ticket);
-    const tickets = this.parkingLots.map((parkingLot) => parkingLot.ticketManager.tickets).reduce( (acc, ticket) => acc.concat(ticket), []);
+    const tickets = this.parkingLots
+      .map(parkingLot => parkingLot.ticketManager.tickets)
+      .reduce((acc, ticket) => acc.concat(ticket), []);
 
     await ticketRepository.save(tickets);
   }
