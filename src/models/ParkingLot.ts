@@ -1,26 +1,33 @@
 import { Car } from "./Car";
 import { Slot } from "./Slot";
-import { TicketManager } from "./TicketManager";
 import { VehicleInfo } from "./VehicleInfo";
 import { Ticket } from "./Ticket";
-import { Entity, PrimaryColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("parkingLots")
 class ParkingLot {
-  @PrimaryColumn()
-  readonly id: number;
-  readonly ticketManager: TicketManager;
-  @OneToMany(type => Slot, slot => slot.parkingLot)
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @OneToMany(type => Slot, slot => slot.parkingLot, {
+    cascade: true,
+    eager: true
+  })
   public slots: Slot[];
 
-  constructor(id: number) {
-    this.id = id;
-    this.ticketManager = new TicketManager();
+  @OneToMany(type => Ticket, ticket => ticket.parkingLot, {
+    cascade: true,
+    eager: true
+  })
+  public _tickets: Ticket[];
+
+  public get tickets() {
+    return this._tickets.sort((a, b) => a.slotNumber - b.slotNumber);
   }
 
   public createSlots(slotAmount: number): Slot[] {
     return Array.from(new Array(slotAmount)).map(
-      (_, index) => new Slot(index + 1, this)
+      (_, index) => new Slot(index + 1)
     );
   }
 
@@ -31,7 +38,7 @@ class ParkingLot {
       car.registrationNumber,
       car.colour
     );
-    const ticket: Ticket = this.ticketManager.issueTicket(
+    const ticket: Ticket = this.issueTicket(
       this.id,
       this.nearestAvailableSlot.number,
       vehicleInfo
@@ -47,25 +54,39 @@ class ParkingLot {
 
     this.findSlotByNumber(returningTicket.slotNumber).makeAvailable();
 
-    this.ticketManager.removeTicket(returningTicket);
+    this.removeTicket(returningTicket);
   }
 
   public getTicketBySlotNumber(slotNumber: number): Ticket {
-    return this.ticketManager.getTicketBySlotNumber(slotNumber);
+    const ticket: Ticket | undefined = this.tickets.find(
+      ticket => ticket.slotNumber === slotNumber
+    );
+
+    if (!ticket) throw new Error("Ticket Not Found");
+
+    return ticket;
   }
 
   public getRegistrationNumbersByColour(colour: string): string[] {
-    return this.ticketManager.getRegistrationNumbersByColour(colour);
+    return this.tickets
+      .filter(ticket => ticket.vehicleInfo.colour === colour)
+      .map(ticket => ticket.vehicleInfo.registrationNumber);
   }
 
   public getSlotNumbersByColour(colour: string): number[] {
-    return this.ticketManager.getSlotNumbersByColour(colour);
+    return this.tickets
+      .filter(ticket => ticket.vehicleInfo.colour === colour)
+      .map(ticket => ticket.slotNumber);
   }
 
   public getSlotNumberByRegistrationNumber(registrationNumber: string): number {
-    return this.ticketManager.getSlotNumberByRegistrationNumber(
-      registrationNumber
+    const ticket: Ticket | undefined = this.tickets.find(
+      ticket => ticket.vehicleInfo.registrationNumber === registrationNumber
     );
+
+    if (!ticket) throw new Error("Slot Number Not Found");
+
+    return ticket.slotNumber;
   }
 
   private get noAvailableSlot(): boolean {
@@ -86,6 +107,24 @@ class ParkingLot {
     if (!slot) throw new Error("Slot Not Found");
 
     return slot;
+  }
+
+  private issueTicket(
+    parkingLotId: number,
+    slotNumber: number,
+    vehicleInfo: VehicleInfo
+  ): Ticket {
+    const ticket: Ticket = new Ticket(parkingLotId, slotNumber, vehicleInfo);
+
+    this._tickets.push(ticket);
+
+    return ticket;
+  }
+
+  private removeTicket(removingTicket: Ticket): void {
+    this._tickets = this.tickets.filter(
+      ticket => ticket.slotNumber !== removingTicket.slotNumber
+    );
   }
 }
 

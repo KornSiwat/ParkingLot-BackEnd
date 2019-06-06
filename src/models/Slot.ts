@@ -6,17 +6,17 @@ class Slot {
   @PrimaryGeneratedColumn()
   readonly id: number;
 
+  @ManyToOne(type => ParkingLot, parkingLot => parkingLot.slots)
+  readonly parkingLot: ParkingLot;
+
   @Column()
   readonly number: number;
   
   @Column()
   isOccupied: boolean;
 
-  @ManyToOne(type => ParkingLot, parkingLot => parkingLot.slots)
-  readonly parkingLot: ParkingLot;
 
-  constructor(slotNumber: number, parkingLot: ParkingLot) {
-    this.parkingLot = parkingLot;
+  constructor(slotNumber: number) {
     this.number = slotNumber;
     this.isOccupied = false;
   }

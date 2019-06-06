@@ -21,9 +21,9 @@ class Controller {
     );
   }
 
-  getStatus(req: Request, res: Response) {
+  async getStatus(req: Request, res: Response) {
     const parkingLotId: number = req.params.parkingLotId;
-    res.send(this.parkingLotApplication.status(parkingLotId));
+    res.send(await this.parkingLotApplication.status(parkingLotId));
   }
 
   async postCreateParkingLot(req: Request, res: Response) {

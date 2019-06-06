@@ -1,5 +1,6 @@
 import { VehicleInfo } from "./VehicleInfo";
-import { PrimaryColumn, Entity, Column, PrimaryGeneratedColumn } from "typeorm";
+import { PrimaryColumn, Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import { ParkingLot } from "./ParkingLot";
 
 @Entity("tickets")
 class Ticket {
@@ -7,18 +8,21 @@ class Ticket {
   readonly id: number;
 
   @Column()
+  readonly parkingLotId: number;
+
+  @Column()
   readonly slotNumber: number;
 
   @Column("simple-json")
   readonly vehicleInfo: VehicleInfo;
 
-  @Column()
-  readonly parkingLotId: number;
+  @ManyToOne(type => ParkingLot, parkingLot => parkingLot._tickets)
+  readonly parkingLot: ParkingLot;
 
   constructor(
     parkingLotId: number,
     slotNumber: number,
-    vehicleInfo: VehicleInfo
+    vehicleInfo: VehicleInfo,
   ) {
     this.parkingLotId = parkingLotId;
     this.slotNumber = slotNumber;
