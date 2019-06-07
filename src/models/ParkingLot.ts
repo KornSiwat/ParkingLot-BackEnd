@@ -3,6 +3,7 @@ import { Slot } from "./Slot";
 import { VehicleInfo } from "./VehicleInfo";
 import { Ticket } from "./Ticket";
 import { Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ParkingIsFullError } from "./Error";
 
 @Entity("parkingLots")
 class ParkingLot {
@@ -32,7 +33,7 @@ class ParkingLot {
   }
 
   public carIn(car: Car): void {
-    if (this.noAvailableSlot) throw new Error("No Available Slot");
+    if (this.noAvailableSlot) throw new ParkingIsFullError("No Available Slot");
 
     const vehicleInfo: VehicleInfo = new VehicleInfo(
       car.registrationNumber,
