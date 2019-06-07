@@ -10,7 +10,7 @@ class ParkingLotApplication {
 
     newParkingLot.slots = slots;
 
-    await this.syncParkingLotWithDatabase(newParkingLot);
+    await this.syncParkingLot(newParkingLot);
 
     return `Created a parking lot id: ${newParkingLot.id} with ${
       newParkingLot.slots.length
@@ -29,7 +29,7 @@ class ParkingLotApplication {
 
       parkingLot.carIn(car);
 
-      this.syncParkingLotWithDatabase(parkingLot);
+      this.syncParkingLot(parkingLot);
 
       console.log(`Allocated Slot Number: ${car.ticket.slotNumber}`);
 
@@ -85,9 +85,9 @@ class ParkingLotApplication {
 
     parkingLot.carOut(car);
 
-    this.deleteTicketInDatabase(parkingLotId, slotNumber);
+    this.deleteTicket(ticket);
 
-    this.syncParkingLotWithDatabase(parkingLot);
+    this.syncParkingLot(parkingLot);
 
     console.log(`Slot number ${slotNumber} is free`);
 
@@ -174,34 +174,24 @@ class ParkingLotApplication {
     try {
       const connection = getConnection();
       const parkingLotRepository = connection.getRepository(ParkingLot);
-  
+
       return await parkingLotRepository.findOneOrFail(parkingLotId);
     } catch {
       throw new Error(`Parking Lot With Id ${parkingLotId} Not Found`);
     }
   }
 
-  private async syncParkingLotWithDatabase(
-    parkingLot: ParkingLot
-  ): Promise<void> {
+  private async syncParkingLot(parkingLot: ParkingLot): Promise<void> {
     const connection = getConnection();
     const parkingLotRepository = connection.getRepository(ParkingLot);
 
     await parkingLotRepository.save(parkingLot);
   }
 
-  private async deleteTicketInDatabase(
-    parkingLotId: number,
-    slotNumber: number
-  ) {
+  private async deleteTicket(ticket: Ticket): Promise<void> {
     const connection = getConnection();
-
-    await connection
-      .createQueryBuilder()
-      .delete()
-      .from(Ticket)
-      .where({ parkingLotId: parkingLotId, slotNumber: slotNumber })
-      .execute();
+    const ticketRepository = connection.getRepository(Ticket);
+    await ticketRepository.delete(ticket.id);
   }
 }
 

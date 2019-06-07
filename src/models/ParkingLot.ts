@@ -2,11 +2,11 @@ import { Car } from "./Car";
 import { Slot } from "./Slot";
 import { VehicleInfo } from "./VehicleInfo";
 import { Ticket } from "./Ticket";
-import { Entity, PrimaryColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("parkingLots")
 class ParkingLot {
-  @PrimaryGeneratedColumn('increment')
+  @PrimaryGeneratedColumn("increment")
   id: number;
 
   @OneToMany(type => Slot, slot => slot.parkingLot, {
