@@ -2,6 +2,9 @@ import { ParkingLot } from "./models/ParkingLot";
 import { Car } from "./models/Car";
 import { Ticket } from "./models/Ticket";
 import { getConnection } from "typeorm";
+import { Config } from "./Config";
+import jwt from "jsonwebtoken";
+import { ParkingLotNotFoundError, SlotNotFoundError } from "./models/Error";
 
 class ParkingLotApplication {
   public async createParkingLot(slotAmount: number): Promise<string> {
@@ -10,11 +13,12 @@ class ParkingLotApplication {
 
     newParkingLot.slots = slots;
 
-    await this.syncParkingLotWithDatabase(newParkingLot);
+    await this.syncParkingLot(newParkingLot);
 
-    return `Created a parking lot id: ${newParkingLot.id} with ${
-      newParkingLot.slots.length
-    } slots`;
+    const secretKey = Config.secretKey;
+    const token = jwt.sign({ id: newParkingLot.id }, secretKey);
+
+    return token;
   }
 
   public async park(
@@ -23,22 +27,15 @@ class ParkingLotApplication {
     colour: string
   ): Promise<string> {
     const car: Car = new Car(registrationNumber, colour);
+    const parkingLot = await this.getParkingLot(parkingLotId);
 
-    try {
-      const parkingLot = await this.getParkingLot(parkingLotId);
+    parkingLot.carIn(car);
 
-      parkingLot.carIn(car);
+    this.syncParkingLot(parkingLot);
 
-      this.syncParkingLotWithDatabase(parkingLot);
+    console.log(`Allocated Slot Number: ${car.ticket.slotNumber}`);
 
-      console.log(`Allocated Slot Number: ${car.ticket.slotNumber}`);
-
-      return `Allocated Slot Number: ${car.ticket.slotNumber}`;
-    } catch (err) {
-      console.log("Sorry, parking lot is full");
-
-      return "Sorry, parking lot is full";
-    }
+    return `Allocated Slot Number: ${car.ticket.slotNumber}`;
   }
 
   public async status(parkingLotId: number): Promise<string> {
@@ -72,9 +69,7 @@ class ParkingLotApplication {
     );
 
     if (!ticket) {
-      console.log(`No Car at Slot ${slotNumber}`);
-
-      return `No Car at Slot ${slotNumber}`;
+      throw new SlotNotFoundError(`No Car at Slot ${slotNumber}`);
     }
 
     const car = new Car(
@@ -85,9 +80,9 @@ class ParkingLotApplication {
 
     parkingLot.carOut(car);
 
-    this.deleteTicketInDatabase(parkingLotId, slotNumber);
+    this.deleteTicket(ticket);
 
-    this.syncParkingLotWithDatabase(parkingLot);
+    this.syncParkingLot(parkingLot);
 
     console.log(`Slot number ${slotNumber} is free`);
 
@@ -174,34 +169,26 @@ class ParkingLotApplication {
     try {
       const connection = getConnection();
       const parkingLotRepository = connection.getRepository(ParkingLot);
-  
+
       return await parkingLotRepository.findOneOrFail(parkingLotId);
     } catch {
-      throw new Error(`Parking Lot With Id ${parkingLotId} Not Found`);
+      throw new ParkingLotNotFoundError(
+        `Parking Lot Not Found`
+      );
     }
   }
 
-  private async syncParkingLotWithDatabase(
-    parkingLot: ParkingLot
-  ): Promise<void> {
+  private async syncParkingLot(parkingLot: ParkingLot): Promise<void> {
     const connection = getConnection();
     const parkingLotRepository = connection.getRepository(ParkingLot);
 
     await parkingLotRepository.save(parkingLot);
   }
 
-  private async deleteTicketInDatabase(
-    parkingLotId: number,
-    slotNumber: number
-  ) {
+  private async deleteTicket(ticket: Ticket): Promise<void> {
     const connection = getConnection();
-
-    await connection
-      .createQueryBuilder()
-      .delete()
-      .from(Ticket)
-      .where({ parkingLotId: parkingLotId, slotNumber: slotNumber })
-      .execute();
+    const ticketRepository = connection.getRepository(Ticket);
+    await ticketRepository.delete(ticket.id);
   }
 }
 

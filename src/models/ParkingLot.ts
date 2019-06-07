@@ -2,11 +2,12 @@ import { Car } from "./Car";
 import { Slot } from "./Slot";
 import { VehicleInfo } from "./VehicleInfo";
 import { Ticket } from "./Ticket";
-import { Entity, PrimaryColumn, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ParkingIsFullError } from "./Error";
 
 @Entity("parkingLots")
 class ParkingLot {
-  @PrimaryGeneratedColumn('increment')
+  @PrimaryGeneratedColumn("increment")
   id: number;
 
   @OneToMany(type => Slot, slot => slot.parkingLot, {
@@ -32,7 +33,7 @@ class ParkingLot {
   }
 
   public carIn(car: Car): void {
-    if (this.noAvailableSlot) throw new Error("No Available Slot");
+    if (this.noAvailableSlot) throw new ParkingIsFullError("No Available Slot");
 
     const vehicleInfo: VehicleInfo = new VehicleInfo(
       car.registrationNumber,
